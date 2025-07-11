@@ -1,40 +1,47 @@
- export default async function handler(req, res) {
+import OpenAI from "openai";
+
+// Inicializa o cliente da OpenAI apontando para a API da DeepSeek
+const openai = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY, // Usando a nova variável de ambiente
+});
+
+export default async function handler(req, res) {
+  // Permite apenas requisições POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Método não permitido' });
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
   const { message } = req.body;
-  const API_KEY = process.env.OPENROUTER_API_KEY;
-  const MODEL = "deepseek/deepseek-r1:free";
 
-  if (!API_KEY) {
-    return res.status(500).json({ message: 'API key não configurada.' });
+  // Validação da mensagem
+  if (!message) {
+    return res.status(400).json({ error: { message: 'A mensagem é obrigatória.' } });
+  }
+
+  // Verifica se a API key está configurada no servidor
+  if (!process.env.DEEPSEEK_API_KEY) {
+    return res.status(500).json({ error: { message: 'A chave da API não está configurada no servidor.' } });
   }
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [{ role: "user", content: message }],
-        stream: false
-      })
+    // Faz a chamada para a API da DeepSeek
+    const completion = await openai.chat.completions.create({
+      model: "deepseek-chat", // Modelo especificado pela DeepSeek
+      messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: message }
+      ],
+      stream: false, // Mantendo como no código original
     });
 
-    const data = await response.json();
+    // Retorna a resposta da API para o frontend
+    res.status(200).json(completion);
 
-    if (!response.ok) {
-      const errorMessage = data.error?.message || 'Erro na resposta da API';
-      return res.status(response.status).json({ message: errorMessage });
-    }
-
-    return res.status(200).json(data);
   } catch (error) {
-    return res.status(500).json({ message: 'Erro interno no servidor' });
+    // Tratamento de erro melhorado
+    console.error('DeepSeek API error:', error);
+    res.status(error.status || 500).json({ error: { message: error.message || 'Ocorreu um erro ao se comunicar com a API.' } });
   }
 }
-
