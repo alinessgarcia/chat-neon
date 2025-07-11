@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat OpenRouter - DeepSeek Free</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #2c003e, #48086f);
+      color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      margin: 20px 0;
+      font-weight: 400;
+      color: #ffffff;
+      text-shadow: 0 0 5px #ff00ff;
+    }
+    #chat {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      height: 400px;
+      overflow-y: auto;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 0 10px #8f00ff;
+    }
+    #chat div {
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 90%;
+      max-width: 600px;
+      height: 80px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      resize: none;
+      font-size: 14px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      box-shadow: inset 0 0 5px #8f00ff;
+    }
+    button {
+      margin-top: 10px;
+      padding: 12px 25px;
+      font-size: 15px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #8f00ff;
+      color: #fff;
+      box-shadow: 0 0 10px #8f00ff, 0 0 20px #8f00ff;
+      transition: background 0.3s, transform 0.2s;
+    }
+    button:hover {
+      background: #a64dff;
+      transform: scale(1.05);
+    }
+    @media (max-width: 600px) {
+      #chat {
+        height: 300px;
+      }
+      textarea {
+        height: 70px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>💜 Chat Neon - DeepSeek Free</h1>
+  <div id="chat"></div>
+  <textarea id="prompt" placeholder="Digite sua mensagem..."></textarea><br>
+  <button id="send">Enviar</button>
+
+  <script>
+    const chatDiv = document.getElementById("chat");
+    const sendBtn = document.getElementById("send");
+    const promptInput = document.getElementById("prompt");
+
+    sendBtn.onclick = async () => {
+      const userInput = promptInput.value.trim();
+      if (!userInput) return;
+
+      // Mostrar mensagem do usuário
+      chatDiv.innerHTML += `<div><strong>Você:</strong> ${userInput}</div>`;
+      promptInput.value = "";
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+
+      // Chamar o nosso backend
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: userInput
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const reply = data.choices[0].message.content;
+          // Mostrar resposta
+          chatDiv.innerHTML += `<div><strong>Bot:</strong> ${reply}</div>`;
+        } else {
+          // Mostrar mensagem de erro da API
+          const errorMessage = data.message || 'Ocorreu um erro.';
+          chatDiv.innerHTML += `<div><strong>Erro:</strong> ${errorMessage}</div>`;
+        }
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      } catch (err) {
+        console.error(err);
+        chatDiv.innerHTML += `<div><strong>Erro:</strong> ${err.message}</div>`;
+      }
+    };
+  </script>
+</body>
+</html>
